@@ -7,6 +7,7 @@ import errno
 import logging
 from os import getpid
 
+from clone import Clone
 from common import CLONE_NEWNS, CLONE_NEWIPC, CLONE_NEWNET, CLONE_NEWPID, CLONE_NEWUSER, CLONE_NEWUTS, CLONE_NEWCGROUP
 from util import setns, unshare
 
@@ -36,7 +37,7 @@ class Namespace(object):
         if isinstance(ns_types, str):
             ns_types = [ns_types]
 
-        if not all([ns_type in NAMESPACES.keys() for ns_type in ns_types]):
+        if any([ns_type not in NAMESPACES.keys() for ns_type in ns_types]):
             raise ValueError('ns_type must be one of {0}'.format(
                 ', '.join(NAMESPACES)
             ))
@@ -142,3 +143,16 @@ class NewNamespaces(Namespace):
             raise OSError(e, errno.errorcode[e])
 
         self._log.debug('Entered namespaces.')
+
+
+def in_namespace(target, ns_types, sync=True, *args):
+    if any([ns_type not in NAMESPACES.keys() for ns_type in ns_types]):
+        raise ValueError('ns_type must be one of {0}'.format(
+            ', '.join(NAMESPACES)
+        ))
+
+    cl = Clone(target, args, sum(map(lambda x: NAMESPACES[x].flag, ns_types)))
+    if sync:
+        cl.wait()
+    return cl
+
