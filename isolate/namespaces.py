@@ -7,9 +7,10 @@ import errno
 import logging
 from os import getpid
 
-from clone import Clone
-from common import CLONE_NEWNS, CLONE_NEWIPC, CLONE_NEWNET, CLONE_NEWPID, CLONE_NEWUSER, CLONE_NEWUTS, CLONE_NEWCGROUP
-from util import setns, unshare
+from isolate.clone import Clone
+from isolate.common import CLONE_NEWNS, CLONE_NEWIPC, CLONE_NEWNET, CLONE_NEWPID, CLONE_NEWUSER, CLONE_NEWUTS, CLONE_NEWCGROUP
+
+from isolate.util import setns, unshare
 
 logging.basicConfig()
 

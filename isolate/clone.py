@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 import ctypes
-
 import os
 from signal import SIGCHLD
 
-from util import clone
+from isolate.util import clone
 
 STACK_SIZE = 1024 * 1024
 
