@@ -1,4 +1,4 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from cgroups import Node
+from namespaces import NewNamespaces, JoinNamespaces
