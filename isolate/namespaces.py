@@ -39,7 +39,7 @@ class Namespace(object):
             ns_types = [ns_types]
 
         if any([ns_type not in NAMESPACES.keys() for ns_type in ns_types]):
-            raise ValueError('ns_type must be one of {0}'.format(
+            raise AttributeError('ns_type must be one of {0}'.format(
                 ', '.join(NAMESPACES)
             ))
 
@@ -76,9 +76,9 @@ class Namespace(object):
 
 class JoinNamespaces(Namespace):
     def __init__(self, ns_types, pid=None, paths=None, proc='/proc'):
-        super().__init__(ns_types, proc)
+        super(JoinNamespaces, self).__init__(ns_types, proc)
         if paths and pid:
-            raise ValueError('you can not specify both paths and pid.')
+            raise AttributeError('you can not specify both paths and pid.')
 
         if isinstance(paths, str):
             paths = [paths]
@@ -87,7 +87,7 @@ class JoinNamespaces(Namespace):
             paths = self._build_paths(pid, self.ns_types)
 
         if not paths:
-            raise ValueError('you mast specify at least one of paths or pid.')
+            raise AttributeError('you mast specify at least one of paths or pid.')
 
         self.paths = paths
         self.children = []
@@ -126,7 +126,7 @@ class JoinNamespaces(Namespace):
 
 class NewNamespaces(Namespace):
     def __init__(self, ns_types):
-        super().__init__(ns_types)
+        super(NewNamespaces, self).__init__(ns_types)
         self.child = None
 
     def __enter__(self):
@@ -148,7 +148,7 @@ class NewNamespaces(Namespace):
 
 def in_namespace(target, ns_types, sync=True, *args):
     if any([ns_type not in NAMESPACES.keys() for ns_type in ns_types]):
-        raise ValueError('ns_type must be one of {0}'.format(
+        raise AttributeError('ns_type must be one of {0}'.format(
             ', '.join(NAMESPACES)
         ))
 
