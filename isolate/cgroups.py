@@ -130,12 +130,3 @@ class Cgroup(object):
 
     def create_child(self, name):
         return Cgroup(os.path.join(self.path, name), self.subsystems)
-
-if __name__ == '__main__':
-    c = Cgroup('/group2', ['memory', 'cpu', 'cpuset'])
-    d = c.create_child('group3')
-    d.execute_command('subl')
-    raw_input()
-    d.delete(kill_tasks=True)
-    c.delete(kill_tasks=True)
-
