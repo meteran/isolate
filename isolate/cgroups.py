@@ -1,12 +1,22 @@
 #!/usr/bin/env python
 # coding: utf-8
 import os
+from datetime import timedelta
+from signal import SIGKILL
 
 from cgroupspy.trees import GroupedTree
 from cgroupspy.nodes import Node
+from datetime import datetime
 
 
 class Cgroup(object):
+    BYTES = 1
+    KILOBYTES = 1024
+    MEGABYTES = 1024**2
+    GIGABYTES = 1024**3
+
+    DEFAULT_CPU = 1024
+
     def __init__(self, path, subsystems):
         if any([subsystem not in Node.CONTROLLERS.keys() for subsystem in subsystems]):
             raise AttributeError('subsystem must be one of {0}'.format(
@@ -22,13 +32,13 @@ class Cgroup(object):
         self.path = path
         splitted_path = path.split(os.sep)
         self.parent = os.sep.join(splitted_path[:-1])
+        if not self.parent:
+            self.parent = os.sep
         self.name = splitted_path[-1]
 
         self.nodes = []
         self._init_nodes()
         self._tree = GroupedTree()
-
-        self.processes = []
 
     def _init_nodes(self):
         parent_node = self._tree.get_node_by_path(self.parent)
@@ -40,7 +50,7 @@ class Cgroup(object):
                 n = self._get_node(subsystem, node)
             else:
                 n = self._create_node(subsystem, parent_node)
-            self.nodes.append(n)
+            self._add_node(n)
 
     def _add_node(self, node):
         self.nodes.append(node)
@@ -59,7 +69,13 @@ class Cgroup(object):
             if n.controller_type == subsystem:
                 return n
 
-    def delete(self):
+    def delete(self, kill_tasks=False, timeout=5):
+        if kill_tasks:
+            for pid in self.tasks:
+                os.kill(pid, SIGKILL)
+            dt = datetime.now() + timedelta(seconds=timeout)
+            while self.tasks and dt > datetime.now():
+                pass
         for node in self.nodes:
             node.parent.delete_cgroup(node.name)
         self._tree = GroupedTree()
@@ -68,13 +84,58 @@ class Cgroup(object):
     def create(self):
         if self.nodes:
             raise RuntimeError('cgroups {} already exists.'.format(self.path))
+        self._init_nodes()
+        self._tree = GroupedTree()
 
     def enter(self):
-        os.system('cgclassify -g {}:{} {}'.format(','.join(self.subsystems), self.path, os.getpid()))
+        self.add_pid(os.getpid())
+
+    def add_pid(self, pid):
+        os.system('cgclassify -g {}:{} {}'.format(','.join(self.subsystems), self.path, pid))
+
+    def execute_command(self, cmd, *args):
+        if args:
+            os.system('cgexec -g {}:{} {} {}'.format(','.join(self.subsystems), self.path, cmd, ' '.join(args)))
+        else:
+            os.system('cgexec -g {}:{} {}'.format(','.join(self.subsystems), self.path, cmd))
+
+    def _check_subsystem(self, subsystem):
+        if subsystem not in self.subsystems:
+            raise AttributeError('subsystem {} not belongs to cgroup {}.'.format(subsystem, self.path))
+
+    def set_memory_limit(self, limit, unit=BYTES):
+        self._check_subsystem('memory')
+        self.memory.limit_in_bytes = limit*unit
+
+    def set_cpu_limit(self, limit=100):
+        self._check_subsystem('cpu')
+        if limit < 1:
+            raise AttributeError('cpu limit must be 1 or greater.')
+        self.cpu.shares = int(self.DEFAULT_CPU * limit / 100)
+
+    def set_cpus(self, *args):
+        self._check_subsystem('cpuset')
+        self.cpuset.cpus = ','.join(map(str, args))
+
+    def set_memory_nodes(self, *args):
+        self._check_subsystem('cpuset')
+        self.cpuset.mems = ','.join(map(str, args))
+
+    @property
+    def tasks(self):
+        node = self._tree.get_node_by_path(self.path)
+        if node:
+            return node.tasks
+        return set()
+
+    def create_child(self, name):
+        return Cgroup(os.path.join(self.path, name), self.subsystems)
 
 if __name__ == '__main__':
-    c = Cgroup('group2/group3', ['memory', 'cpu'])
-    print c.nodes
+    c = Cgroup('/group2', ['memory', 'cpu', 'cpuset'])
+    d = c.create_child('group3')
+    d.execute_command('subl')
     raw_input()
-    c.delete()
+    d.delete(kill_tasks=True)
+    c.delete(kill_tasks=True)
 
