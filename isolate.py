@@ -28,7 +28,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="run your unsafe program")
     parser.add_argument('unsafe_program')
     parser.add_argument('arg', nargs='*')
-    parser.add_argument("-cg", "--cgroups", nargs=1, type=parse_cgroups, metavar='SUBSYSTEMS:PATH')
+    parser.add_argument("-cg", "--cgroups", type=parse_cgroups, metavar='SUBSYSTEMS:PATH')
     parser.add_argument("-ns", "--namespaces", nargs='+', choices=NAMESPACES)
     parser.add_argument("-nsc", "--no-seccomp", action='store_false')
     args = parser.parse_args()
@@ -41,11 +41,11 @@ def main(program, args, cgroups, namespaces, seccomp):
     if cgroups:
         c = Cgroup(cgroups[0], cgroups[1])
         if seccomp:
-            f = lambda: c.execute_command('seccomp_isolate', *to_run)
+            f = lambda: c.execute_command('./seccomp_isolate', *to_run)
         else:
             f = lambda: c.execute_command(program, *args)
     elif seccomp:
-        f = lambda: os.system('seccomp_isolate ' + cmd)
+        f = lambda: os.system('./seccomp_isolate ' + cmd)
     else:
         f = lambda: os.system(cmd)
 
@@ -57,5 +57,4 @@ def main(program, args, cgroups, namespaces, seccomp):
 
 if __name__ == '__main__':
     args = parse_args()
-    print args
     main(*args)

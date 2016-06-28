@@ -130,3 +130,9 @@ class Cgroup(object):
 
     def create_child(self, name):
         return Cgroup(os.path.join(self.path, name), self.subsystems)
+
+
+if __name__ == '__main__':
+    c = Cgroup('/group2', ['memory'])
+    c.set_memory_limit(50, Cgroup.MEGABYTES)
+    c.execute_command('subl')
