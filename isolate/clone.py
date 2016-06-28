@@ -35,4 +35,7 @@ class Clone(object):
             return 0
 
     def wait(self):
-        return os.waitpid(self.pid, 0)[1]/256
+        try:
+            return os.waitpid(self.pid, 0)[1]/256
+        except:
+            return -1

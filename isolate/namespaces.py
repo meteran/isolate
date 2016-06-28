@@ -146,7 +146,7 @@ class NewNamespaces(Namespace):
         self._log.debug('Entered namespaces.')
 
 
-def in_namespace(target, ns_types, sync=True, *args):
+def in_namespaces(target, ns_types, sync=True, *args):
     if any([ns_type not in NAMESPACES.keys() for ns_type in ns_types]):
         raise AttributeError('ns_type must be one of {0}'.format(
             ', '.join(NAMESPACES)
